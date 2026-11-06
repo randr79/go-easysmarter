@@ -11,20 +11,6 @@ const (
 	PortManager uint16 = 29809
 )
 
-type MACAddress [6]byte
-
-func (m MACAddress) String() string {
-	const hexDigit = "0123456789abcdef"
-	buf := make([]byte, 0, 17)
-	for i, b := range m {
-		if i > 0 {
-			buf = append(buf, ':')
-		}
-		buf = append(buf, hexDigit[b>>4], hexDigit[b&0xF])
-	}
-	return string(buf)
-}
-
 type NotConnectedError struct{}
 
 func (NotConnectedError) Error() string {
@@ -60,18 +46,18 @@ func (c ContentLengthExceededError) Error() string {
 
 type StatusCode uint32
 
-//go:generate stringer -type=Method -trimprefix=Method
-type Method byte
-
 const (
-	MethodDiscover     Method = 0
-	MethodGetRequest   Method = 1
-	MethodGetResponse  Method = 2
-	MethodPostRequest  Method = 3
-	MethodPostResponse Method = 4
+	StatusCodeSuccess StatusCode = 0
+
+	GetStatusCodeUnsupported StatusCode = 65535 - 2
+
+	SetStatusCodeRsaSuccess           StatusCode = 4098 //0x1002
+	SetStatusCodeInvalidRequest       StatusCode = 3
+	SetStatusCodeIncorrectOldPassword StatusCode = 5
+	SetStatusCodeInvalidCredentials   StatusCode = 7
 )
 
-type Message struct {
+type Header struct {
 	Method    Method
 	SwitchMac MACAddress
 	ClientMac MACAddress
@@ -79,7 +65,11 @@ type Message struct {
 	RequestId uint16
 	Fragment  uint16 // 2 bytes
 	State     StatusCode
-	Body      []byte
+}
+
+type Message struct {
+	Header
+	Body []byte
 }
 
 const maxContentLength int = int(^uint16(0)) - 32

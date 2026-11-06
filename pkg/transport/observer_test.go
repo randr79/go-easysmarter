@@ -47,7 +47,7 @@ func TestObserverSendNotConnected(t *testing.T) {
 func TestObserverSendDelegates(t *testing.T) {
 	observer := &Observer{}
 	wantErr := errors.New("send failed")
-	message := Message{RequestId: 42}
+	message := Message{Header: Header{RequestId: 42}}
 	address := &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 4321}
 	calls := 0
 
@@ -77,11 +77,13 @@ func TestObserverResolveTargetWithDefaultKey(t *testing.T) {
 	}
 	defaultState, _ := observer.States.Get([6]byte{})
 	message := Message{
-		Method:    MethodDiscover,
-		SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
-		ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
-		RequestId: 17,
-		Body:      []byte("value"),
+		Header: Header{
+			Method:    MethodDiscover,
+			SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
+			ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
+			RequestId: 17,
+		},
+		Body: []byte("value"),
 	}
 
 	target, got, err := observer.resolveTarget(encodeTestMessage(t, defaultState, message))
@@ -118,10 +120,12 @@ func TestObserverResolveTargetWithPeerKey(t *testing.T) {
 	observer.States.Set([6]byte{9, 8, 7, 6, 5, 4}, peerState)
 
 	message := Message{
-		Method:    MethodPostResponse,
-		SwitchMac: MACAddress{4, 3, 2, 1, 0, 9},
-		ClientMac: MACAddress{1, 3, 5, 7, 9, 2},
-		RequestId: 29,
+		Header: Header{
+			Method:    MethodPostResponse,
+			SwitchMac: MACAddress{4, 3, 2, 1, 0, 9},
+			ClientMac: MACAddress{1, 3, 5, 7, 9, 2},
+			RequestId: 29,
+		},
 	}
 	target, got, err := observer.resolveTarget(encodeTestMessage(t, peerState, message))
 	if err != nil {
@@ -152,9 +156,11 @@ func TestObserverResolveTargetWithoutMatchingKey(t *testing.T) {
 	}
 	peerState, _ := peerStates.Get([6]byte{})
 	message := Message{
-		Method:    MethodDiscover,
-		SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
-		ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
+		Header: Header{
+			Method:    MethodDiscover,
+			SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
+			ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
+		},
 	}
 
 	target, got, err := observer.resolveTarget(encodeTestMessage(t, peerState, message))
@@ -180,11 +186,13 @@ func TestObserverListenDispatchesResolvedMessage(t *testing.T) {
 	}
 	defaultState, _ := observer.States.Get([6]byte{})
 	message := Message{
-		Method:    MethodDiscover,
-		SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
-		ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
-		RequestId: 71,
-		Body:      []byte("captured"),
+		Header: Header{
+			Method:    MethodDiscover,
+			SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
+			ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
+			RequestId: 71,
+		},
+		Body: []byte("captured"),
 	}
 
 	listener := newMockUDPConnection()
@@ -233,10 +241,12 @@ func TestObserverConnectSendAndClose(t *testing.T) {
 
 	observer.onConnect(conn)
 	message := Message{
-		Method:    MethodDiscover,
-		SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
-		ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
-		RequestId: 103,
+		Header: Header{
+			Method:    MethodDiscover,
+			SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
+			ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
+			RequestId: 103,
+		},
 	}
 	if err := observer.Send(message, testPeerAddr); err != nil {
 		t.Fatalf("Send() error = %v", err)

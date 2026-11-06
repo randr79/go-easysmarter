@@ -65,13 +65,15 @@ func TestResolveTargetReusesExistingPeerState(t *testing.T) {
 	}
 	defaultState, _ := states.Get([6]byte{})
 	message := Message{
-		Method:    MethodGetResponse,
-		SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
-		ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
-		RequestId: 321,
-		Fragment:  4,
-		State:     5,
-		Body:      []byte("payload"),
+		Header: Header{
+			Method:    MethodGetResponse,
+			SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
+			ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
+			RequestId: 321,
+			Fragment:  4,
+			State:     5,
+		},
+		Body: []byte("payload"),
 	}
 	peer := &State{Encryption: defaultState.Encryption, TokenId: 99}
 	states.Set([6]byte(message.SwitchMac), peer)
@@ -105,9 +107,11 @@ func TestFindEncryptedPeerSkipsUnencryptedStates(t *testing.T) {
 	}
 	otherState, _ := otherStates.Get([6]byte{})
 	message := Message{
-		Method:    MethodDiscover,
-		SwitchMac: MACAddress{9, 8, 7, 6, 5, 4},
-		ClientMac: MACAddress{4, 5, 6, 7, 8, 9},
+		Header: Header{
+			Method:    MethodDiscover,
+			SwitchMac: MACAddress{9, 8, 7, 6, 5, 4},
+			ClientMac: MACAddress{4, 5, 6, 7, 8, 9},
+		},
 	}
 
 	target, header, body := (transportBase{States: states}).findEncryptedPeer(encodeTestMessage(t, otherState, message))
@@ -127,10 +131,12 @@ func TestListenPacketsSkipsUnreadablePackets(t *testing.T) {
 	source := &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 4000}
 
 	message := Message{
-		Method:    MethodDiscover,
-		SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
-		ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
-		RequestId: 654,
+		Header: Header{
+			Method:    MethodDiscover,
+			SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
+			ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
+			RequestId: 654,
+		},
 	}
 	unrecognizedKey, err := NewStateTable([]byte("unrecognized-key"))
 	if err != nil {
@@ -210,13 +216,15 @@ func TestTransportBaseSendUsesDefaultKeyForNewPeer(t *testing.T) {
 	conn := newTestConn(t)
 
 	message := Message{
-		Method:    MethodPostRequest,
-		SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
-		ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
-		RequestId: 101,
-		Fragment:  3,
-		State:     8,
-		Body:      []byte("outbound"),
+		Header: Header{
+			Method:    MethodPostRequest,
+			SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
+			ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
+			RequestId: 101,
+			Fragment:  3,
+			State:     8,
+		},
+		Body: []byte("outbound"),
 	}
 	base := transportBase{States: states}
 	if err := base.send(conn, message, testPeerAddr); err != nil {
@@ -242,10 +250,12 @@ func TestTransportBaseSendPreservesPeerState(t *testing.T) {
 	peerState, _ := peerStates.Get([6]byte{})
 	peerState.TokenId = 23
 	message := Message{
-		Method:    MethodGetRequest,
-		SwitchMac: MACAddress{7, 6, 5, 4, 3, 2},
-		ClientMac: MACAddress{2, 3, 4, 5, 6, 7},
-		RequestId: 102,
+		Header: Header{
+			Method:    MethodGetRequest,
+			SwitchMac: MACAddress{7, 6, 5, 4, 3, 2},
+			ClientMac: MACAddress{2, 3, 4, 5, 6, 7},
+			RequestId: 102,
+		},
 	}
 	states.Set([6]byte(message.SwitchMac), peerState)
 
@@ -265,7 +275,7 @@ func TestTransportBaseSendRejectsInvalidMessage(t *testing.T) {
 		wantMacs int
 		wantSize bool
 	}{
-		{name: "oversized body", message: Message{SwitchMac: validMac, ClientMac: validMac, Body: make([]byte, maxContentLength+1)}, wantSize: true},
+		{name: "oversized body", message: Message{Header: Header{SwitchMac: validMac, ClientMac: validMac}, Body: make([]byte, maxContentLength+1)}, wantSize: true},
 		{name: "everything invalid", message: Message{Body: make([]byte, maxContentLength+1)}, wantMacs: 2, wantSize: true},
 	}
 
@@ -304,9 +314,11 @@ func TestTransportBaseSendReturnsWriteError(t *testing.T) {
 	}
 
 	message := Message{
-		Method:    MethodDiscover,
-		SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
-		ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
+		Header: Header{
+			Method:    MethodDiscover,
+			SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
+			ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
+		},
 	}
 	err = (transportBase{States: states}).send(conn, message, &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 9})
 	if err == nil {

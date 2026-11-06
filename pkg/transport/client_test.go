@@ -49,7 +49,7 @@ func TestClientSendNotConnected(t *testing.T) {
 func TestClientSendDelegates(t *testing.T) {
 	client := &Client{}
 	wantErr := errors.New("send failed")
-	message := Message{RequestId: 42}
+	message := Message{Header: Header{RequestId: 42}}
 	address := &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 4321}
 	timeout := 3 * time.Second
 	handlerCalled := false
@@ -122,11 +122,13 @@ func TestClientResolveTargetWithDefaultKey(t *testing.T) {
 	}
 	defaultState, _ := client.States.Get(managerTestDefaultMac)
 	message := Message{
-		Method:    MethodDiscover,
-		SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
-		ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
-		RequestId: 17,
-		Body:      []byte("value"),
+		Header: Header{
+			Method:    MethodDiscover,
+			SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
+			ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
+			RequestId: 17,
+		},
+		Body: []byte("value"),
 	}
 
 	target, got, err := client.resolveTarget(encodeTestMessage(t, defaultState, message))
@@ -165,10 +167,12 @@ func TestClientResolveTargetWithPeerKey(t *testing.T) {
 	client.States.Set(peerMac, peerState)
 
 	message := Message{
-		Method:    MethodPostResponse,
-		SwitchMac: MACAddress{4, 3, 2, 1, 0, 9},
-		ClientMac: MACAddress{1, 3, 5, 7, 9, 2},
-		RequestId: 29,
+		Header: Header{
+			Method:    MethodPostResponse,
+			SwitchMac: MACAddress{4, 3, 2, 1, 0, 9},
+			ClientMac: MACAddress{1, 3, 5, 7, 9, 2},
+			RequestId: 29,
+		},
 	}
 	packet := encodeTestMessage(t, peerState, message)
 
@@ -199,10 +203,12 @@ func TestClientConnectSendAndHandle(t *testing.T) {
 
 	client.onConnect(conn)
 	message := Message{
-		Method:    MethodGetRequest,
-		SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
-		ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
-		RequestId: 104,
+		Header: Header{
+			Method:    MethodGetRequest,
+			SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
+			ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
+			RequestId: 104,
+		},
 	}
 	handlerCalled := false
 	handler := func(got *Message, addr *net.UDPAddr) bool {
@@ -242,10 +248,12 @@ func TestClientSendTimeoutCallsHandler(t *testing.T) {
 
 	timedOut := make(chan bool, 1)
 	message := Message{
-		Method:    MethodDiscover,
-		SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
-		ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
-		RequestId: 105,
+		Header: Header{
+			Method:    MethodDiscover,
+			SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
+			ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
+			RequestId: 105,
+		},
 	}
 	if err := client.Send(message, testPeerAddr, func(got *Message, addr *net.UDPAddr) bool {
 		timedOut <- got == nil && addr == nil
@@ -269,7 +277,7 @@ func TestClientHandleKeepsHandlerWhenDropIsFalse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewClient() error = %v", err)
 	}
-	message := Message{RequestId: 106}
+	message := Message{Header: Header{RequestId: 106}}
 	called := false
 	client.ResponseHandlers.Set(message.RequestId, func(got *Message, addr *net.UDPAddr) bool {
 		called = got == &message && addr != nil
@@ -284,7 +292,7 @@ func TestClientHandleKeepsHandlerWhenDropIsFalse(t *testing.T) {
 		t.Error("handle() removed the handler when it returned false")
 	}
 
-	client.handle(&Message{RequestId: 999}, &net.UDPAddr{})
+	client.handle(&Message{Header: Header{RequestId: 999}}, &net.UDPAddr{})
 }
 
 func TestClientSendFailureRemovesHandler(t *testing.T) {
@@ -298,9 +306,11 @@ func TestClientSendFailureRemovesHandler(t *testing.T) {
 
 	called := make(chan struct{}, 1)
 	message := Message{
-		SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
-		ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
-		RequestId: 107,
+		Header: Header{
+			SwitchMac: MACAddress{1, 2, 3, 4, 5, 6},
+			ClientMac: MACAddress{6, 5, 4, 3, 2, 1},
+			RequestId: 107,
+		},
 	}
 	err = client.Send(message, testPeerAddr, func(*Message, *net.UDPAddr) bool {
 		called <- struct{}{}

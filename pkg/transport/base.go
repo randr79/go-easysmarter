@@ -115,13 +115,15 @@ func (s transportBase) resolveTarget(data []byte) (*State, *Message, error) {
 		return nil, nil, nil
 	}
 	msg := &Message{
-		Method:    Method(header.Method),
-		SwitchMac: header.SwitchMac,
-		ClientMac: header.ClientMac,
-		RequestId: header.RequestId,
-		Fragment:  header.Fragment,
-		Body:      content,
-		State:     StatusCode(header.Status),
+		Header: Header{
+			Method:    Method(header.Method),
+			SwitchMac: header.SwitchMac,
+			ClientMac: header.ClientMac,
+			RequestId: header.RequestId,
+			Fragment:  header.Fragment,
+			State:     StatusCode(header.Status),
+		},
+		Body: content,
 	}
 
 	return target, msg, nil
